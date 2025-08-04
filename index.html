@@ -747,70 +747,64 @@ function createInteractiveProjection() {
 
   // Function to update projections based on angle
   function updateProjections(angle) {
-    const radians = angle * Math.PI / 180;
-    const cos = Math.cos(radians);
-    const sin = Math.sin(radians);
+  const radians = angle * Math.PI / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  
+  // Calculate projection line endpoints
+  const centerX = INTERACTIVE_WIDTH / 2;
+  const centerY = HEIGHT / 2;
+  const lineLength = 100;
+  
+  const x1 = centerX - lineLength * cos;
+  const y1 = centerY - lineLength * sin;
+  const x2 = centerX + lineLength * cos;
+  const y2 = centerY + lineLength * sin;
+  
+  // Update projection line
+  projectionLine
+    .attr("x1", x1)
+    .attr("y1", y1)
+    .attr("x2", x2)
+    .attr("y2", y2);
+  
+  // Calculate projections for each point
+  data.forEach((d, i) => {
+    const px = scales.x(d.x);
+    const py = scales.y(d.y);
     
-    // Calculate projection line endpoints
-    const centerX = INTERACTIVE_WIDTH / 2;
-    const centerY = HEIGHT / 2;
-    const lineLength = 100;
+    // Project point onto line
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy);
     
-    const x1 = centerX - lineLength * cos;
-    const y1 = centerY - lineLength * sin;
-    const x2 = centerX + lineLength * cos;
-    const y2 = centerY + lineLength * sin;
+    const projX = x1 + t * dx;
+    const projY = y1 + t * dy;
     
     // Update projection line
-    projectionLine
-      .attr("x1", x1)
-      .attr("y1", y1)
-      .attr("x2", x2)
-      .attr("y2", y2);
+    d3.select(projectionLines.nodes()[i])
+      .attr("x1", px)
+      .attr("y1", py)
+      .attr("x2", projX)
+      .attr("y2", projY);
     
-    // Calculate projections for each point
-    data.forEach((d, i) => {
-      const px = scales.x(d.x);
-      const py = scales.y(d.y);
-      
-      // Project point onto line
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy);
-      
-      const projX = x1 + t * dx;
-      const projY = y1 + t * dy;
-      
-      // Calculate signed distance from center for proper 1D representation
-      const centerX = INTERACTIVE_WIDTH / 2;
-      const centerY = HEIGHT / 2;
-      const signedDistance = (projX - centerX) * cos + (projY - centerY) * sin;
-      
-      // Update projection line
-      d3.select(projectionLines.nodes()[i])
-        .attr("x1", px)
-        .attr("y1", py)
-        .attr("x2", projX)
-        .attr("y2", projY);
-      
-      // Update projection point
-      d3.select(projectionPoints.nodes()[i])
-        .attr("cx", projX)
-        .attr("cy", projY);
-      
-      // Calculate 1D position (normalized projection value)
-      // Use signed distance from center for proper direction handling
-      const projectionValue = signedDistance / 100; // Normalize to [-1, 1]
-      const compressedX = INTERACTIVE_WIDTH * (projectionValue + 1) / 2;
-      
-      // Store projection value in data for tooltip
-      data[i].projectionValue = projectionValue;
-      
-      // Update compressed point
-      d3.select(compressedPoints.nodes()[i])
-        .attr("cx", compressedX);
-    });
-  }
+    // Update projection point
+    d3.select(projectionPoints.nodes()[i])
+      .attr("cx", projX)
+      .attr("cy", projY);
+    
+          // Use absolute value to ensure consistent projection values
+      const projectionValue = Math.abs((t - 0.5) * 2);
+    const compressedX = INTERACTIVE_WIDTH * (projectionValue + 1) / 2;
+    
+    // Store projection value in data for tooltip
+    data[i].projectionValue = projectionValue;
+    
+    // Update compressed point
+    d3.select(compressedPoints.nodes()[i])
+      .attr("cx", compressedX);
+  });
+}
 
   // Initialize with 90 degrees
   updateProjections(90);
