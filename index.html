@@ -1,0 +1,808 @@
+<!doctype html>
+<meta charset="utf-8">
+<script src="https://distill.pub/template.v1.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<html>
+  <head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
+
+    <!-- The loading of KaTeX is deferred to speed up page rendering -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6" crossorigin="anonymous"></script>
+
+    <!-- To automatically render math in text elements, include the auto-render extension: -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
+  </head>
+  <body>
+  </body>
+</html>
+
+
+<script type="text/front-matter">
+title: "Principal Components Analysis (PCA) Tutorial"
+description: "A description of your amazing interactive article"
+authors: 
+- Max Weinberg: https://github.com/MaxUCSD
+affiliations:
+- UCSD Neuroscience Graduate Program: https://neurograd.ucsd.edu/
+</script>
+
+<dt-article class="centered">
+  <h1>Principal Components Analysis (PCA) Tutorial</h1>
+  <h2>An explanation of PCA that will hopefully feel intuitive</h2>
+  <dt-byline></dt-byline>
+
+  <p>If you are in neuroscience, well then you have probably seen PCA used before (citations here?), if not, you will. I have had a very difficult time understanding and teaching PCA, this is my attempt to remedy that. This is for anyone who wants to learn what PCA is doing. It is designed for people with very little math background but hopefully there will be new perspectives which anyone, no matter their background in math, can get something out of.  </p>
+  <p>  I think it is helpful to start with a question, why would anyone want to use PCA? In my opinion, the most intuitive use for PCA is <em>compression</em>. Ask yourself, no, really, think about it, what is compression? One perspective on compression is that it is the act of retaining only what is necesarry. In music, for example, when you record a song there will be sounds that are recorded which are out of the human range of hearing, we don't need to save those sounds! We are removing redundant or unnescary information. This is all well and good in the case of music, but you're a neuroscientist, not a filthy musician (jokes) so what do you care? I'm glad you asked. 
+  </p>
+
+  <p> Before we get to neuroscience applications I want to take a brief detour and ask, on a more philosophical level, what is the goal of data science? I want to illustrate what I think is the goal with an example. 
+    Imagine you go out and you ask three people their height and weight. You get back a table which looks like this:  </p>
+
+      <div class="results-table-container">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th> </th>
+              <th class="number">Height (in) </th>
+              <th class="number">Weight (lbs) </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Phillip</td>
+              <td class="number">72</td>
+              <td class="number">144</td>
+            </tr>
+            <tr>
+              <td>Jeffrey</td>
+              <td class="number">65</td>
+              <td class="number">130</td>
+            </tr>
+            <tr>
+              <td>Clarise</td>
+              <td class="number">60</td>
+              <td class="number">120</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>What do you notice about this data? You might have noticed that the weight of each person is just twice their height. As a scientist this is exactly the kind of thing I'm excited to find, 
+        there is a <em>relationship</em> between height and weight.
+         What we once thought were two separate things are actually 
+         just the same underlying thing. In other words, 
+         we now have a <em>rule</em>: $weight = 2height$, which tells us
+         how to go from one to the other. Note that $\frac{weight}{2} = height$, 
+         the important point is not the direction; i.e. 
+         that you can go from height to weight, 
+         but that if I know one, I know the other. 
+         This is analagous to, in physics, if you know the initial conditions 
+         and the rules of a system you can 
+         know what state that system will be in at
+         any time point. This is, in some sense, understanding, which is, in some sense, 
+         the goal of science. This kind of understanding 
+         also implies that we don't need to
+         keep all of the information, 
+         we only need one number, height or weight, to get both. We have 
+         compressed the information using a relationship between them which is exactly
+         what PCA tries to do.  
+      </p>
+
+
+      <p> 
+        Lets say we wanted to exploit this relationship so that we can keep less data, which number do we pick, the height or the weight?
+        In this perfect example, where everyone lies along the line $w = 2h$, 
+        it does not matter which of the numbers you keep because there is perfect redundancy. Lets imagine we collected different height and weight data that is not perfectly on the line
+        and it looks like this:
+
+      </p>
+      <div class="results-table-container">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th> </th>
+              <th class="number">Height (in) </th>
+              <th class="number">Weight (lbs) </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Phillip</td>
+              <td class="number">72</td>
+              <td class="number">150</td>
+            </tr>
+            <tr>
+              <td>Jeffrey</td>
+              <td class="number">65</td>
+              <td class="number">140</td>
+            </tr>
+            <tr>
+              <td>Clarise</td>
+              <td class="number">60</td>
+              <td class="number">123</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+       Let's take a look at what 
+       our data looks like when we plot it:
+       
+       <h2>Height Versus Weight</h2>
+       <div class="l-body">
+         <div id="Height_Weight_Scatter" style="margin: 20px auto; text-align: center;"></div>
+       </div>
+
+
+  <p>
+    Now we have reframed our problem, instead of trying to 
+    find the perfect relationship
+    to compress our data, let's look for the best (linear) relationship. The problem statement of 
+    PCA is essentially: "Find me the line such that we retain as much information about the data as possible". An 
+    important thing to note is that we are not trying find a line which helps us predict 
+    height from weight (the problem statement of linear regression), we are looking for the line 
+    which retains the most information about both height and weight! Then the number you end up with, that you keep, 
+    is your position along the line. But what line should we pick, and how do we find where each
+    individual data point belongs on the line?
+  </p>  
+
+  <p>
+    To try to motivate the line we ought to keep, take a look at this data:
+  </p>
+       
+  <h2>Same Height, Different Weights</h2>
+  <div class="l-body">
+    <div id="Vertical_Scatter" style="margin: 20px auto; text-align: center;"></div>
+  </div>
+
+  <p>What number should you keep? Intuitively, 
+    weight, right? But, why? Well, 
+    if you only kept the height of each person, then you would not 
+    be able to tell them apart! The fact that you are only going to 
+    keep the weight, implies that the line you need to 
+    "maintain the maximum information" is the y-axis. 
+    In a sense, what you are doing is
+    drawing a line from your points to the y-axis and asking where each point ends up. 
+    It's not just any old line either
+    it's a line which meets the y-axis at a $90\degree$ angle. 
+    In math, we call this, the operation of taking a point and 
+    asking where it ends up when you draw the perpendicular line to another line a <em> projection </em>. Take a look:
+  </p>
+
+  <h2>Projecting Points to the Y-Axis</h2>
+  <div class="l-body">
+    <div id="Projection_Scatter" style="margin: 20px auto; text-align: center;"></div>
+  </div>
+
+  <p>
+
+    Note that it does not matter that the line we project onto was the y-axis, 
+    it could be any line parallel to the y-axis, 
+    in that way it's more like you project onto a direction (north in our case).
+    Importantly, we did not strictly need 
+    to project our data onto the north direction, 
+    we could have picked any direction!
+  </p>
+
+  <h2>Interactive Projection Demonstration</h2>
+  <p>
+    Try moving the slider below to change the projection direction. Watch how the projections change, 
+    and see how the 1D representation (right plot) changes accordingly.
+  </p>
+  
+  <div style="text-align: center; margin: 10px auto;">
+    <label for="angle-slider">Projection Angle: <span id="angle-value">90°</span></label><br>
+    <input type="range" id="angle-slider" min="0" max="180" value="90" style="width: 300px;">
+  </div>
+  
+  <div class="interactive-demo">
+    <div class="demo-panel">
+      <h3>2D Data with Projections</h3>
+      <div id="Interactive_Projection" style="margin: 5px auto; text-align: center;"></div>
+    </div>
+    <div class="demo-panel">
+      <h3>1D Compressed Representation</h3>
+      <div id="Compressed_Representation" style="margin: 5px auto; text-align: center;"></div>
+    </div>
+  </div>
+
+  
+<p> 
+
+What happens when you move the slider to $90 \degree$? 
+All the data points just lie on the same part of the line, they are indistinguishable. 
+What if we did not know which direction to pick before hand, 
+how would we know, or learn? 
+Well we know we don't want to pick the line on which 
+the people are indistinguishable. But other than that, as long as we can distinguish everyone, what makes 
+one direction better than any other direction? Intuitively, it's a lot better to have a summary number which retains
+as much information as possible, this number is variance and it is exactly the spread you see of the points in the 1d compressed
+representation. In our example, the direction which maximizes the variance of our data is the north direction. 
+
+<p> 
+It's worth taking a breather here and summarizing what we have done so far. 
+We started by introducing the concept of compression and noting how a rule which relates 
+two things is a natural way of compressing information. Then we introduced the problem statement of 
+PCA: "Find me the line such that when we project onto it we retain as much info as possible". 
+Then we defined projection as where you end up when you draw a perpendicular line to some direction. 
+It's worth noting that if you understand what we've done so far, then you pretty much understand PCA! WHATTTT I hear you ask? 
+Yep! That's pretty much it. We're just taking our data and projecting it onto the line or plane (or hyperplane in higher dimensions) which maximizes the variance. 
+If you understand that, that's totally enough! In this next section, we're gonna take some time to formalize
+what has so far been informal and based on trial and error, but you should feel good about yourself if you understand 
+everything we've done so far. 
+</p>
+
+<p>
+</p>
+
+
+  
+  <h2>Your Content Here</h2>
+  <p>Replace this section with your actual article content. You can:</p>
+  <ul>
+    <li>Add more text and explanations</li>
+    <li>Include citations using <dt-cite key="example"></dt-cite></li>
+    <li>Add footnotes<dt-fn>Like this explanatory footnote</dt-fn></li>
+    <li>Include code blocks with syntax highlighting</li>
+  </ul>
+
+  <dt-code language="javascript" block>
+// Example code block
+function createVisualization(data) {
+  return d3.select("#chart")
+    .selectAll("div")
+    .data(data)
+    .enter()
+    .append("div")
+    .style("height", d => d * 10 + "px");
+}
+  </dt-code>
+
+</dt-article>
+
+<dt-appendix>
+  <h3>Acknowledgments</h3>
+  <p>Thanks to the Distill team for creating this wonderful framework.</p>
+  
+  <h3>Author Contributions</h3>
+  <p>Research and writing: Your Name</p>
+</dt-appendix>
+
+<script type="text/bibliography">
+@article{example,
+  title={Example Paper Title},
+  author={Author, Example},
+  journal={Example Journal},
+  year={2024},
+  url={https://example.com/paper.pdf}
+}
+</script>
+
+<style>
+/* Custom styles for your article */
+.interactive-element {
+  border: 1px solid #ddd;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 4px;
+  background: #f9f9f9;
+}
+
+/* Ensure content is properly centered on wide screens */
+dt-article.centered {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 100px;
+}
+
+/* Center all content within the article */
+dt-article.centered > * {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Ensure the main content area is centered */
+.l-body {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Table styles */
+.results-table {
+  width: 400px;
+  border-collapse: collapse;
+  margin: 20px auto;
+  font-size: 14px;
+}
+
+.results-table th,
+.results-table td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
+.results-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.results-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+.results-table .number {
+  text-align: center;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+}
+
+/* Center tables and other content */
+.results-table-container {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+/* Interactive demo styles */
+.interactive-demo {
+  display: flex;
+  gap: 20px;
+  margin: 10px auto;
+  max-width: 1200px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.demo-panel {
+  flex: 1;
+  min-width: 250px;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 400px) {
+  .interactive-demo {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .demo-panel {
+    max-width: 100%;
+  }
+  
+  .results-table {
+    width: 90%;
+  }
+}
+
+/* Add spacing between elements */
+dt-article.centered h1 {
+  margin-bottom: 30px;
+}
+
+dt-article.centered h2 {
+  margin-top: 40px;
+  margin-bottom: 20px;
+}
+
+dt-article.centered p {
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+dt-article.centered .l-body {
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+
+/* Add spacing around tables */
+.results-table-container {
+  margin: 30px 0;
+}
+
+/* Add spacing around interactive elements */
+.interactive-demo {
+  margin: 40px 0;
+}
+
+/* Add spacing around individual demo panels */
+.demo-panel {
+  margin: 20px 0;
+}
+
+/* Add spacing around the slider */
+#angle-slider {
+  margin: 20px 0;
+}
+
+.bar {
+  fill: #1f77b4;
+  transition: fill 0.3s;
+}
+
+.bar:hover {
+  fill: #ff7f0e;
+}
+
+.tooltip {
+  position: absolute;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+</style>
+
+<script>
+// Wait for everything to load, including Distill template
+window.addEventListener('load', function() {
+  // Give Distill template time to initialize
+  setTimeout(function() {
+    // Render math with KaTeX
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false
+      });
+    }
+    
+    // Initialize visualizations
+    initializeVisualizations();
+  }, 100);
+});
+
+// Constants and configuration
+const COLORS = {
+  primary: "#1f77b4",
+  secondary: "#2ca02c", 
+  highlight: "#ff7f0e",
+  gray: "#666",
+  dark: "#333"
+};
+
+const MARGIN = {top: 20, right: 20, bottom: 50, left: 80};
+const WIDTH = 350 - MARGIN.left - MARGIN.right;
+const HEIGHT = 280 - MARGIN.top - MARGIN.bottom;
+const INTERACTIVE_WIDTH = 320 - MARGIN.left - MARGIN.right;
+
+// Data constants
+const PEOPLE_DATA = [
+  {x: 72, y: 150, name: "Phillip"},
+  {x: 65, y: 140, name: "Jeffrey"},
+  {x: 60, y: 123, name: "Clarise"}
+];
+
+const VERTICAL_DATA = [
+  {x: 60, y: 150, name: "Phillip"},
+  {x: 60, y: 140, name: "Jeffrey"},
+  {x: 60, y: 123, name: "Clarise"}
+];
+
+// Helper functions
+function createScales(width = WIDTH, height = HEIGHT) {
+  return {
+    x: d3.scaleLinear().domain([50, 80]).range([0, width]),
+    y: d3.scaleLinear().domain([100, 160]).range([height, 0])
+  };
+}
+
+function createSVG(containerId, width = WIDTH, height = HEIGHT) {
+  return d3.select(containerId)
+    .append("svg")
+    .attr("width", width + MARGIN.left + MARGIN.right)
+    .attr("height", height + MARGIN.top + MARGIN.bottom)
+    .append("g")
+    .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+}
+
+function addAxes(svg, scales, width = WIDTH, height = HEIGHT) {
+  // Add axes
+  svg.append("g")
+    .attr("transform", `translate(0,${height})`)
+    .call(d3.axisBottom(scales.x));
+
+  svg.append("g")
+    .call(d3.axisLeft(scales.y));
+
+  // Add X axis label
+  svg.append("text")
+    .attr("transform", `translate(${width/2}, ${height + 45})`)
+    .style("text-anchor", "middle")
+    .text("Height (inches)");
+
+  // Add Y axis label
+  svg.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", -45)                    
+    .attr("x", 0 - (height / 2))       
+    .style("text-anchor", "middle")
+    .text("Weight (lbs)");
+}
+
+function createTooltip() {
+  return d3.select('body')
+    .append('div')
+    .attr('class', 'tooltip')
+    .style('opacity', 0);
+}
+
+function addPointInteractions(circles, color, tooltip) {
+  circles
+    .style("cursor", "pointer")
+    .on('mouseover', function(event, d) {
+      // Highlight the point
+      d3.select(this)
+        .transition()
+        .duration(200)
+        .attr("r", 8)
+        .attr("fill", COLORS.highlight);
+      
+      // Show tooltip
+      tooltip
+        .style('opacity', 1)
+        .html(`${d.name}<br>Height: ${d.x}"<br>Weight: ${d.y} lbs`)
+        .style('left', (event.pageX + 10) + 'px')
+        .style('top', (event.pageY - 10) + 'px');
+    })
+    .on('mouseout', function(event, d) {
+      // Reset the point
+      d3.select(this)
+        .transition()
+        .duration(200)
+        .attr("r", 5)
+        .attr("fill", color);
+      
+      // Hide tooltip
+      tooltip.style('opacity', 0);
+    });
+}
+
+function addProjections(svg, data, scales) {
+  // Add projection lines
+  svg.selectAll(".projection-line")
+    .data(data)
+    .enter().append("line")
+    .attr("class", "projection-line")
+    .attr("x1", d => scales.x(d.x))
+    .attr("y1", d => scales.y(d.y))
+    .attr("x2", 0)  // Project to y-axis
+    .attr("y2", d => scales.y(d.y))
+    .attr("stroke", COLORS.gray)
+    .attr("stroke-width", 1)
+    .attr("stroke-dasharray", "3,3")
+    .style("opacity", 0.6);
+
+  // Add projection points on y-axis
+  svg.selectAll(".projection-point")
+    .data(data)
+    .enter().append("circle")
+    .attr("class", "projection-point")
+    .attr("cx", 0)
+    .attr("cy", d => scales.y(d.y))
+    .attr("r", 3)
+    .attr("fill", COLORS.highlight)
+    .style("opacity", 0.8);
+}
+
+// Main visualization functions
+function createScatterPlot(containerId, data, color = COLORS.primary, showProjections = false) {
+  const svg = createSVG(containerId);
+  const scales = createScales();
+  const tooltip = createTooltip();
+
+  // Add projection lines if requested
+  if (showProjections) {
+    addProjections(svg, data, scales);
+  }
+
+  // Add scatter plot points
+  const circles = svg.selectAll(".dot")
+    .data(data)
+    .enter().append("circle")
+    .attr("class", "dot")
+    .attr("cx", d => scales.x(d.x))
+    .attr("cy", d => scales.y(d.y))
+    .attr("r", 5)
+    .attr("fill", color);
+
+  addPointInteractions(circles, color, tooltip);
+  addAxes(svg, scales);
+}
+
+function createInteractiveProjection() {
+  const data = [...VERTICAL_DATA]; // Create a copy to avoid modifying original
+  const scales = createScales(INTERACTIVE_WIDTH, HEIGHT);
+
+  // Create left plot (2D with projections)
+  const svg2D = createSVG("#Interactive_Projection", INTERACTIVE_WIDTH, HEIGHT);
+  const svg1D = createSVG("#Compressed_Representation", INTERACTIVE_WIDTH, HEIGHT);
+
+  // Add axes to 2D plot
+  addAxes(svg2D, scales, INTERACTIVE_WIDTH, HEIGHT);
+
+  // Add data points to 2D plot
+  svg2D.selectAll(".dot")
+    .data(data)
+    .enter().append("circle")
+    .attr("class", "dot")
+    .attr("cx", d => scales.x(d.x))
+    .attr("cy", d => scales.y(d.y))
+    .attr("r", 5)
+    .attr("fill", COLORS.secondary);
+
+  // Create projection elements
+  let projectionLine = svg2D.append("line")
+    .attr("class", "projection-line")
+    .attr("stroke", COLORS.highlight)
+    .attr("stroke-width", 2)
+    .style("opacity", 0.8);
+
+  let projectionLines = svg2D.selectAll(".proj-line")
+    .data(data)
+    .enter().append("line")
+    .attr("class", "proj-line")
+    .attr("stroke", COLORS.gray)
+    .attr("stroke-width", 1)
+    .attr("stroke-dasharray", "3,3")
+    .style("opacity", 0.6);
+
+  let projectionPoints = svg2D.selectAll(".proj-point")
+    .data(data)
+    .enter().append("circle")
+    .attr("class", "proj-point")
+    .attr("r", 3)
+    .attr("fill", COLORS.highlight)
+    .style("opacity", 0.8);
+
+  // Create 1D line
+  const lineY = HEIGHT / 2;
+  svg1D.append("line")
+    .attr("x1", 0)
+    .attr("y1", lineY)
+    .attr("x2", INTERACTIVE_WIDTH)
+    .attr("y2", lineY)
+    .attr("stroke", COLORS.dark)
+    .attr("stroke-width", 2);
+
+  // Add 1D axis
+  svg1D.append("g")
+    .attr("transform", `translate(0,${lineY + 20})`)
+    .call(d3.axisBottom(d3.scaleLinear().domain([-1, 1]).range([0, INTERACTIVE_WIDTH])));
+
+  // Create 1D points
+  let compressedPoints = svg1D.selectAll(".compressed-point")
+    .data(data)
+    .enter().append("circle")
+    .attr("class", "compressed-point")
+    .attr("cy", lineY)
+    .attr("r", 8)
+    .attr("fill", COLORS.secondary)
+    .style("opacity", 0.8)
+    .style("cursor", "pointer")
+    .on('mouseover', function(event, d) {
+      // Highlight the point
+      d3.select(this)
+        .transition()
+        .duration(200)
+        .attr("r", 12)
+        .attr("fill", COLORS.highlight);
+      
+      // Show tooltip
+      const tooltip = d3.select('body')
+        .append('div')
+        .attr('class', 'tooltip')
+        .style('opacity', 1)
+        .html(`${d.name}<br>Projection Value: ${d.projectionValue ? d.projectionValue.toFixed(2) : 'N/A'}`)
+        .style('left', (event.pageX + 10) + 'px')
+        .style('top', (event.pageY - 10) + 'px');
+      
+      // Store tooltip reference for removal
+      this.tooltip = tooltip;
+    })
+    .on('mouseout', function(event, d) {
+      // Reset the point
+      d3.select(this)
+        .transition()
+        .duration(200)
+        .attr("r", 8)
+        .attr("fill", COLORS.secondary);
+      
+      // Remove tooltip
+      if (this.tooltip) {
+        this.tooltip.remove();
+        this.tooltip = null;
+      }
+    });
+
+  // Function to update projections based on angle
+  function updateProjections(angle) {
+    const radians = angle * Math.PI / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    
+    // Calculate projection line endpoints
+    const centerX = INTERACTIVE_WIDTH / 2;
+    const centerY = HEIGHT / 2;
+    const lineLength = 100;
+    
+    const x1 = centerX - lineLength * cos;
+    const y1 = centerY - lineLength * sin;
+    const x2 = centerX + lineLength * cos;
+    const y2 = centerY + lineLength * sin;
+    
+    // Update projection line
+    projectionLine
+      .attr("x1", x1)
+      .attr("y1", y1)
+      .attr("x2", x2)
+      .attr("y2", y2);
+    
+    // Calculate projections for each point
+    data.forEach((d, i) => {
+      const px = scales.x(d.x);
+      const py = scales.y(d.y);
+      
+      // Project point onto line
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy);
+      
+      const projX = x1 + t * dx;
+      const projY = y1 + t * dy;
+      
+      // Update projection line
+      d3.select(projectionLines.nodes()[i])
+        .attr("x1", px)
+        .attr("y1", py)
+        .attr("x2", projX)
+        .attr("y2", projY);
+      
+      // Update projection point
+      d3.select(projectionPoints.nodes()[i])
+        .attr("cx", projX)
+        .attr("cy", projY);
+      
+      // Calculate 1D position (normalized projection value)
+      const projectionValue = t * lineLength / 100;
+      const compressedX = INTERACTIVE_WIDTH * (projectionValue + 1) / 2;
+      
+      // Store projection value in data for tooltip
+      data[i].projectionValue = projectionValue;
+      
+      // Update compressed point
+      d3.select(compressedPoints.nodes()[i])
+        .attr("cx", compressedX);
+    });
+  }
+
+  // Initialize with 90 degrees
+  updateProjections(90);
+
+  // Add slider functionality
+  const slider = document.getElementById('angle-slider');
+  const angleValue = document.getElementById('angle-value');
+  
+  slider.addEventListener('input', function() {
+    const angle = parseInt(this.value);
+    angleValue.textContent = angle + '°';
+    updateProjections(angle);
+  });
+}
+
+function initializeVisualizations() {
+  // Create all visualizations using the refactored functions
+  createScatterPlot("#Height_Weight_Scatter", PEOPLE_DATA, COLORS.primary);
+  createScatterPlot("#Vertical_Scatter", VERTICAL_DATA, COLORS.secondary);
+  createScatterPlot("#Projection_Scatter", VERTICAL_DATA, COLORS.secondary, true);
+  createInteractiveProjection();
+}
+</script>
