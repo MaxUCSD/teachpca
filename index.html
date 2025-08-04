@@ -43,11 +43,18 @@ affiliations:
     what is necesarry. In music, for example, when you record a 
     song there will be sounds that are recorded which are out of the 
     human range of hearing, we don't need to save those sounds! 
-    We are removing redundant or unnecesarry information. This is all well and good in the case of music, but you're a neuroscientist, not a filthy musician (jokes) so what do you care? I'm glad you asked. 
+    We are removing redundant or unnecesarry information. 
+    This is all well and good in the case of music, 
+    but you're a neuroscientist, not a filthy musician (jokes) 
+    so what do you care? I'm glad you asked. 
   </p>
 
-  <p> Before we get to neuroscience applications I want to take a brief detour and ask, on a more philosophical level, what is the goal of data science? I want to illustrate what I think is the goal with an example. 
-    Imagine you go out and you ask three people their height and weight. You get back a table which looks like this:  </p>
+  <p> Before we get to neuroscience applications I want to take a 
+    step back and ask, on a more philosophical level, 
+    what is the goal of data science? I want to illustrate 
+    what I think is the goal with an example. 
+    Imagine you go out and you ask three people their height and weight. 
+    You get back a table which looks like this:  </p>
 
       <div class="results-table-container">
         <table class="results-table">
@@ -78,7 +85,10 @@ affiliations:
         </table>
       </div>
 
-      <p>What do you notice about this data? You might have noticed that the weight of each person is just twice their height. As a scientist this is exactly the kind of thing I'm excited to find, 
+      <p>What do you notice about this data? 
+        You might have noticed that the weight of 
+        each person is just twice their height. 
+        As a scientist this is exactly the kind of thing I'm excited to find, 
         there is a <em>relationship</em> between height and weight.
          What we once thought were two separate things are actually 
          just the same underlying thing. In other words, 
@@ -178,7 +188,8 @@ affiliations:
     It's not just any old line either
     it's a line which meets the y-axis at a $90\degree$ angle. 
     In math, we call this, the operation of taking a point and 
-    asking where it ends up when you draw the perpendicular line to another line a <em> projection </em>. Take a look:
+    asking where it ends up when you draw the perpendicular line 
+    to another line a <em> projection </em>. Take a look:
   </p>
 
   <h2>Projecting Points to the Y-Axis</h2>
@@ -190,9 +201,10 @@ affiliations:
 
     Note that it does not matter that the line we project onto was the y-axis, 
     it could be any line parallel to the y-axis, 
-    in that way it's more like you project onto a direction (north in our case).
+    in that way it's more like you project onto a direction 
+    (north/south in our case).
     Importantly, we did not strictly need 
-    to project our data onto the north direction, 
+    to project our data onto the north/south direction, 
     we could have picked any direction!
   </p>
 
@@ -769,6 +781,11 @@ function createInteractiveProjection() {
       const projX = x1 + t * dx;
       const projY = y1 + t * dy;
       
+      // Calculate signed distance from center for proper 1D representation
+      const centerX = INTERACTIVE_WIDTH / 2;
+      const centerY = HEIGHT / 2;
+      const signedDistance = (projX - centerX) * cos + (projY - centerY) * sin;
+      
       // Update projection line
       d3.select(projectionLines.nodes()[i])
         .attr("x1", px)
@@ -782,7 +799,8 @@ function createInteractiveProjection() {
         .attr("cy", projY);
       
       // Calculate 1D position (normalized projection value)
-      const projectionValue = t * lineLength / 100;
+      // Use signed distance from center for proper direction handling
+      const projectionValue = signedDistance / 100; // Normalize to [-1, 1]
       const compressedX = INTERACTIVE_WIDTH * (projectionValue + 1) / 2;
       
       // Store projection value in data for tooltip
