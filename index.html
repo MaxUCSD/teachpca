@@ -797,8 +797,9 @@ function createInteractiveProjection() {
       .attr("cx", projX)
       .attr("cy", projY);
     
-          // Use absolute value to ensure consistent projection values
-      const projectionValue = Math.abs((t - 0.5) * 2);
+          // Calculate signed distance from center along the projection direction
+      const signedDistance = (px - centerX) * cos + (py - centerY) * sin;
+      const projectionValue = signedDistance / lineLength;
     const compressedX = INTERACTIVE_WIDTH * (projectionValue + 1) / 2;
     
     // Store projection value in data for tooltip
